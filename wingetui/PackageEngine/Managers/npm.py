@@ -41,23 +41,17 @@ class NPMPackageManager(PackageManagerModule):
         print(f"🔵 Starting {self.NAME} search for dynamic packages")
         try:
             packages: list[Package] = []
-            p = subprocess.Popen(f"{self.EXECUTABLE} search {query}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, cwd=os.path.expanduser("~"), env=os.environ.copy(), shell=True)
-            DashesPassed = False
+            p = subprocess.Popen(f"{self.EXECUTABLE} --parseable search {query}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, cwd=os.path.expanduser("~"), env=os.environ.copy(), shell=True)
             while p.poll() is None:
                 line: str = str(p.stdout.readline().strip(), "utf-8", errors="ignore")
                 if line:
-                    if not DashesPassed:
-                        if "NAME" in line:
-                            DashesPassed = True
-                    else:
-                        package = list(filter(None, line.split("|")))
-                        if len(package) >= 4:
-                            name = formatPackageIdAsName(package[0][1:] if package[0][0] == "@" else package[0]).strip()
-                            id = package[0].strip()
-                            version = package[4].strip()
-                            source = self.NAME
-                            if name not in self.BLACKLISTED_PACKAGE_NAMES and id not in self.BLACKLISTED_PACKAGE_IDS and version not in self.BLACKLISTED_PACKAGE_VERSIONS:
-                                packages.append(Package(name, id, version, source, Npm))
+                    package = list(filter(None, line.split("\t")))
+                    name = formatPackageIdAsName(package[0][1:] if package[0][0] == "@" else package[0]).strip()
+                    id = package[0].strip()
+                    version = package[4].strip()
+                    source = self.NAME
+                    if name not in self.BLACKLISTED_PACKAGE_NAMES and id not in self.BLACKLISTED_PACKAGE_IDS and version not in self.BLACKLISTED_PACKAGE_VERSIONS:
+                        packages.append(Package(name, id, version, source, Npm))
             print(f"🟢 {self.NAME} search for updates finished with {len(packages)} result(s)")
             return packages
         except Exception as e:
